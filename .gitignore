@@ -1,0 +1,22 @@
+# Never commit secrets or machine-specific config
+.secrets
+gitconfig.local
+settings.local.json
+CLAUDE.local.md
+
+# Python
+__pycache__/
+
+# Editor/OS artifacts
+.DS_Store
+*.swp
+*~
+
+# Git worktrees
+.worktrees/
+
+# Nvim runtime state — backup/undo/swap dirs each carry their own .gitignore
+# (the dirs themselves are tracked so nvim doesn't have to mkdir on first use)
+
+# Packer compiled
+config/nvim/plugin/packer_compiled.lua

@@ -1,0 +1,23 @@
+[user]
+	name = Adam Steen
+	email = 8374368+adamsteen@users.noreply.github.com
+[core]
+	autocrlf = input
+	excludesfile = ~/.config/git/ignore
+	pager = delta
+[init]
+	defaultBranch = main
+[push]
+	autoSetupRemote = true
+[advice]
+	detachedHead = false
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+[merge]
+	conflictStyle = zdiff3
+[credential]
+	helper = cache --timeout=3600
+[include]
+	path = ~/.gitconfig.rmt
