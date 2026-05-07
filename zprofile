@@ -5,6 +5,7 @@ if [[ "$OSTYPE" == darwin* ]]; then
 else
     export VISUAL='/usr/bin/nvim'
 fi
+export EDITOR=$VISUAL
 export HOMEBREW_NO_ENV_HINTS=1
 export NODE_OPTIONS="--max-old-space-size=8192"
 export TERMINFO_DIRS=$TERMINFO_DIRS:$HOME/.local/share/terminfo
@@ -69,6 +70,8 @@ if [ -f /.dockerenv ]; then
     export PATH="${_sys_path}${_usr_path:+:$_usr_path}"
     unset _sys_path _usr_path dir
 fi
+
+export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
 
 # ── Overlay (loaded last so it can see env/PATH from above) ──────────────────
 [ -f "$HOME/.zprofile.rmt" ] && source "$HOME/.zprofile.rmt"
