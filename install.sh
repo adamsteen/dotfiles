@@ -72,6 +72,19 @@ if [ ! -d "$HOME/.config/base16-shell" ]; then
     git clone https://github.com/chriskempson/base16-shell.git "$HOME/.config/base16-shell"
 fi
 
+# Oh My Zsh (cloned from upstream if not already present).
+# Skipped in the devcontainer by default — containers already disable history
+# and harden PATH; OMZ adds startup cost. Set INSTALL_OMZ=1 to install there.
+# --keep-zshrc preserves our own ~/.zshrc; --unattended skips chsh + prompts.
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+    if [ -f /.dockerenv ] && [ "${INSTALL_OMZ:-0}" != "1" ]; then
+        echo "  Skipping Oh My Zsh in devcontainer (set INSTALL_OMZ=1 to install)"
+    else
+        echo "  Installing Oh My Zsh..."
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended --keep-zshrc
+    fi
+fi
+
 # Scripts
 link_or_copy "$DOTFILES_DIR/local/bin/tmux-save.sh"  "$HOME/.local/bin/tmux-save.sh"
 link_or_copy "$DOTFILES_DIR/local/bin/status.sh"     "$HOME/.local/bin/status.sh"
