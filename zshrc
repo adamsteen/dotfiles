@@ -36,7 +36,7 @@ fi
 # clone in the devcontainer by default; set INSTALL_OMZ=1 to opt in there.
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="robbyrussell"
-plugins=(git macos docker docker-compose tmux)
+plugins=(git macos docker docker-compose tmux vi-mode)
 [ -f "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
 
 # Run our own compinit only when OMZ isn't loaded (OMZ runs its own).
