@@ -23,6 +23,7 @@ cd ~/dotfiles
 - `config/nvim/` — Neovim config
 - `local/bin/` — small helper scripts
 - `secrets.example` — template for `~/.secrets` (personal env vars, not committed)
+- Oh My Zsh — cloned to `~/.oh-my-zsh` by `install.sh` and sourced from `zshrc` (skipped in devcontainer; set `INSTALL_OMZ=1` to opt in there)
 
 ## Machine-local overrides
 
