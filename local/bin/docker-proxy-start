@@ -1,9 +1,42 @@
 #!/bin/bash
+# Expose root-owned /var/run/docker.sock as a world-writable user socket via
+# socat, so docker / devcontainer work without sudo on RMT Linux sessions.
+set -euo pipefail
+
 SOCKET=/tmp/docker-user.sock
-if [ ! -S "$SOCKET" ]; then
-  sudo socat UNIX-LISTEN:${SOCKET},fork,mode=777 \
-    UNIX-CONNECT:/var/run/docker.sock &
+
+if [ -S "$SOCKET" ]; then
+  echo "Docker proxy already running"
+  exit 0
+fi
+
+# Resolve socat against the user's PATH and pass the absolute path to sudo,
+# since sudo's secure_path on Debian drops /home/linuxbrew/.linuxbrew/bin
+# (where brew installs socat) — so plain `sudo socat` would fail with
+# "command not found" even when socat is installed.
+SOCAT="$(command -v socat || true)"
+if [ -z "$SOCAT" ]; then
+  echo "docker-proxy-start: socat not found on PATH" >&2
+  echo "  install with: brew install socat   (or: sudo apt install socat)" >&2
+  exit 1
+fi
+
+sudo "$SOCAT" UNIX-LISTEN:${SOCKET},fork,mode=777 \
+  UNIX-CONNECT:/var/run/docker.sock &
+proxy_pid=$!
+
+# Poll briefly for the socket to appear so we don't report success before
+# socat has actually bound (or failed). socat normally binds in <100ms; cap
+# at ~2s.
+for _ in $(seq 1 20); do
+  [ -S "$SOCKET" ] && break
+  kill -0 "$proxy_pid" 2>/dev/null || break
+  sleep 0.1
+done
+
+if [ -S "$SOCKET" ]; then
   echo "Docker proxy started"
 else
-  echo "Docker proxy already running"
+  echo "docker-proxy-start: socat exited before $SOCKET appeared" >&2
+  exit 1
 fi
