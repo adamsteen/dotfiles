@@ -1,11 +1,8 @@
 
 # ── Environment variables ────────────────────────────────────────────────────
-if [[ "$OSTYPE" == darwin* ]]; then
-    export VISUAL='/opt/homebrew/bin/nvim'
-else
-    export VISUAL='/usr/bin/nvim'
-fi
-export EDITOR=$VISUAL
+# VISUAL/EDITOR are set further down, after `brew shellenv` populates
+# $HOMEBREW_PREFIX, so the same code resolves nvim correctly on both
+# Apple Silicon and Linuxbrew without OS-specific hardcoding.
 export HOMEBREW_NO_ENV_HINTS=1
 export NODE_OPTIONS="--max-old-space-size=8192"
 export TERMINFO_DIRS=$TERMINFO_DIRS:$HOME/.local/share/terminfo
@@ -53,6 +50,16 @@ if [[ "$OSTYPE" == darwin* ]]; then
 elif [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
+
+# Editor — resolved against $HOMEBREW_PREFIX (set just above by brew shellenv).
+# Falls back to PATH lookup in environments without brew (e.g. devcontainers).
+if [ -n "${HOMEBREW_PREFIX:-}" ] && [ -x "$HOMEBREW_PREFIX/bin/nvim" ]; then
+    export VISUAL="$HOMEBREW_PREFIX/bin/nvim"
+else
+    export VISUAL='nvim'
+fi
+export EDITOR=$VISUAL
+
 eval "$(fnm env --use-on-cd 2>/dev/null)"
 eval "$(rbenv init - --no-rehash zsh 2>/dev/null)"
 
