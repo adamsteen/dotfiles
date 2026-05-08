@@ -48,7 +48,7 @@ closing — once started, it runs until reboot or until you stop it
 explicitly:
 
 ```sh
-sudo pkill -f 'socat UNIX-LISTEN:/tmp/docker-user.sock'
+docker-proxy-stop     # stops socat and removes /tmp/docker-user.sock
 ```
 
 `zprofile` exports `DOCKER_HOST=unix:///tmp/docker-user.sock` only when both

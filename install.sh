@@ -89,6 +89,7 @@ fi
 link_or_copy "$DOTFILES_DIR/local/bin/tmux-save.sh"        "$HOME/.local/bin/tmux-save.sh"
 link_or_copy "$DOTFILES_DIR/local/bin/status.sh"           "$HOME/.local/bin/status.sh"
 link_or_copy "$DOTFILES_DIR/local/bin/docker-proxy-start"  "$HOME/.local/bin/docker-proxy-start"
+link_or_copy "$DOTFILES_DIR/local/bin/docker-proxy-stop"   "$HOME/.local/bin/docker-proxy-stop"
 
 # ── Machine-specific templates ───────────────────────────────────────────────
 if [ ! -f /.dockerenv ] && [ ! -f "$HOME/.secrets" ]; then
