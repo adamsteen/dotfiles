@@ -1,0 +1,9 @@
+#!/bin/bash
+SOCKET=/tmp/docker-user.sock
+if [ ! -S "$SOCKET" ]; then
+  sudo socat UNIX-LISTEN:${SOCKET},fork,mode=777 \
+    UNIX-CONNECT:/var/run/docker.sock &
+  echo "Docker proxy started"
+else
+  echo "Docker proxy already running"
+fi

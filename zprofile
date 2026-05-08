@@ -19,6 +19,14 @@ if [[ "$OSTYPE" == darwin* ]]; then
     export RUBY_CONFIGURE_OPTS="--with-openssl-dir=$(brew --prefix openssl@3)"
 fi
 
+# RMT Linux sessions: $USER is `adams@rmtp` on the VDI / jump host. Route
+# docker through the user-accessible socket proxy started by
+# `docker-proxy-start` so we can run docker / devcontainer without sudo.
+# Personal Linux boxes keep their default docker behaviour.
+if [[ "$OSTYPE" == linux* && "${USER:l}" == *@rmtp* ]]; then
+    export DOCKER_HOST=unix:///tmp/docker-user.sock
+fi
+
 if [[ "$OSTYPE" == darwin* ]]; then
     export ANDROID_HOME="$HOME/Library/Android/sdk"
     export ANDROID_SDK_ROOT="$HOME/Library/Android/sdk"
