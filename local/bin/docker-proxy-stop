@@ -1,0 +1,38 @@
+#!/bin/bash
+# Stop the docker-user.sock proxy started by docker-proxy-start. Idempotent:
+# reports "not running" and exits 0 if there's nothing to stop.
+set -euo pipefail
+
+SOCKET=/tmp/docker-user.sock
+PATTERN="socat UNIX-LISTEN:${SOCKET}"
+
+# pgrep first so we can tell "wasn't running" from "stop failed". -f matches
+# against the full cmdline so we hit only the docker proxy's socat, not any
+# other socat the user might have running.
+if ! pgrep -f "$PATTERN" >/dev/null 2>&1 && [ ! -S "$SOCKET" ]; then
+  echo "Docker proxy not running"
+  exit 0
+fi
+
+# socat ran under sudo, so the process is owned by root — non-root pkill
+# would silently match nothing.
+sudo pkill -f "$PATTERN" 2>/dev/null || true
+
+# Wait briefly for the process to actually exit. ~2s cap, same shape as
+# docker-proxy-start's poll.
+for _ in $(seq 1 20); do
+  pgrep -f "$PATTERN" >/dev/null 2>&1 || break
+  sleep 0.1
+done
+
+# socat usually unlinks its listen socket on SIGTERM, but not always — and
+# a stale socket file would make the next docker-proxy-start think it's
+# already running. Clean up explicitly.
+sudo rm -f "$SOCKET"
+
+if pgrep -f "$PATTERN" >/dev/null 2>&1; then
+  echo "docker-proxy-stop: socat still running after SIGTERM" >&2
+  exit 1
+fi
+
+echo "Docker proxy stopped"

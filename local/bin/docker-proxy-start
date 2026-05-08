@@ -21,16 +21,19 @@ if [ -z "$SOCAT" ]; then
   exit 1
 fi
 
-sudo "$SOCAT" UNIX-LISTEN:${SOCKET},fork,mode=777 \
-  UNIX-CONNECT:/var/run/docker.sock &
-proxy_pid=$!
+# setsid -f: run socat in its own session, detached from the controlling
+# tty, so closing the launching shell doesn't SIGHUP it. Redirects close
+# the inherited tty fds so the parent can exit cleanly. setsid -f forks
+# and returns immediately — no `&` needed.
+sudo setsid -f "$SOCAT" UNIX-LISTEN:${SOCKET},fork,mode=777 \
+  UNIX-CONNECT:/var/run/docker.sock \
+  </dev/null >/dev/null 2>&1
 
 # Poll briefly for the socket to appear so we don't report success before
-# socat has actually bound (or failed). socat normally binds in <100ms; cap
-# at ~2s.
+# socat has actually bound. socat normally binds in <100ms; cap at ~2s.
+# If socat dies before binding we just time out and report failure below.
 for _ in $(seq 1 20); do
   [ -S "$SOCKET" ] && break
-  kill -0 "$proxy_pid" 2>/dev/null || break
   sleep 0.1
 done
 

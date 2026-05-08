@@ -43,6 +43,14 @@ docker-proxy-start    # one-shot per boot
 docker ps             # no sudo
 ```
 
+The proxy is launched via `setsid -f` so it survives the launching shell
+closing — once started, it runs until reboot or until you stop it
+explicitly:
+
+```sh
+docker-proxy-stop     # stops socat and removes /tmp/docker-user.sock
+```
+
 `zprofile` exports `DOCKER_HOST=unix:///tmp/docker-user.sock` only when both
 `$OSTYPE` is `linux*` and `$USER` contains `@rmtp` (case-insensitive) — i.e.
 the RMT VDI / jump-host environment. Personal Linux boxes keep their default
