@@ -18,12 +18,16 @@ bindkey -v
 
 # ── Aliases ──────────────────────────────────────────────────────────────────
 alias tmux='tmux -2'
-if [[ "$OSTYPE" == darwin* ]]; then
-    alias vi='/opt/homebrew/bin/nvim'
-    alias vim='/opt/homebrew/bin/nvim'
+# nvim path comes from $HOMEBREW_PREFIX (set by `brew shellenv` in zprofile),
+# so this works on both Apple Silicon (/opt/homebrew) and Linuxbrew
+# (/home/linuxbrew/.linuxbrew). Falls back to PATH lookup in environments
+# without brew (e.g. devcontainers).
+if [ -n "${HOMEBREW_PREFIX:-}" ] && [ -x "$HOMEBREW_PREFIX/bin/nvim" ]; then
+    alias vi="$HOMEBREW_PREFIX/bin/nvim"
+    alias vim="$HOMEBREW_PREFIX/bin/nvim"
 else
-    alias vi='/usr/bin/nvim'
-    alias vim='/usr/bin/nvim'
+    alias vi='nvim'
+    alias vim='nvim'
 fi
 
 # ── Completions ──────────────────────────────────────────────────────────────
@@ -36,7 +40,12 @@ fi
 # clone in the devcontainer by default; set INSTALL_OMZ=1 to opt in there.
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="robbyrussell"
-plugins=(git macos docker docker-compose tmux vi-mode)
+# `macos` plugin (tab/pfd/quick-look) only works on Darwin; omit elsewhere.
+if [[ "$OSTYPE" == darwin* ]]; then
+    plugins=(git macos docker docker-compose tmux vi-mode)
+else
+    plugins=(git docker docker-compose tmux vi-mode)
+fi
 [ -f "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
 
 # Run our own compinit only when OMZ isn't loaded (OMZ runs its own).
@@ -46,7 +55,11 @@ if [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
 fi
 
 # ── iTerm2 ───────────────────────────────────────────────────────────────────
-test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+# iTerm2 is macOS-only — guard explicitly so the intent is obvious to readers
+# (the test -e would already silently skip on Linux).
+if [[ "$OSTYPE" == darwin* ]]; then
+    test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+fi
 
 # ── Overlay ──────────────────────────────────────────────────────────────────
 [ -f "$HOME/.zshrc.rmt" ] && source "$HOME/.zshrc.rmt"
