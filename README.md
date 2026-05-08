@@ -38,6 +38,7 @@ root-owned `/var/run/docker.sock` as a world-writable user socket at
 `devcontainer` without `sudo`:
 
 ```sh
+brew install socat    # one-shot per machine (or: sudo apt install socat)
 docker-proxy-start    # one-shot per boot
 docker ps             # no sudo
 ```
