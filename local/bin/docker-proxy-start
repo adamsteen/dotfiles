@@ -10,13 +10,18 @@ if [ -S "$SOCKET" ]; then
   exit 0
 fi
 
-if ! command -v socat >/dev/null 2>&1; then
+# Resolve socat against the user's PATH and pass the absolute path to sudo,
+# since sudo's secure_path on Debian drops /home/linuxbrew/.linuxbrew/bin
+# (where brew installs socat) — so plain `sudo socat` would fail with
+# "command not found" even when socat is installed.
+SOCAT="$(command -v socat || true)"
+if [ -z "$SOCAT" ]; then
   echo "docker-proxy-start: socat not found on PATH" >&2
   echo "  install with: brew install socat   (or: sudo apt install socat)" >&2
   exit 1
 fi
 
-sudo socat UNIX-LISTEN:${SOCKET},fork,mode=777 \
+sudo "$SOCAT" UNIX-LISTEN:${SOCKET},fork,mode=777 \
   UNIX-CONNECT:/var/run/docker.sock &
 proxy_pid=$!
 
