@@ -30,6 +30,14 @@ else
     alias vim='nvim'
 fi
 
+# GlobalProtect (Palo Alto Networks VPN) — macOS only.
+# launchctl + /Library/LaunchAgents/ are Darwin-specific; the launch
+# agents won't exist on Linux / VDI / devcontainer sessions.
+if [[ "$OSTYPE" == darwin* ]]; then
+    alias start-globalprotect='launchctl load /Library/LaunchAgents/com.paloaltonetworks.gp.pangp*'
+    alias stop-globalprotect='launchctl unload /Library/LaunchAgents/com.paloaltonetworks.gp.pangp*'
+fi
+
 # ── Completions ──────────────────────────────────────────────────────────────
 # fpath additions must run before any compinit (ours below or OMZ's), or the
 # extra completion functions won't be picked up.
