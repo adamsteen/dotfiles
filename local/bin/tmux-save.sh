@@ -31,6 +31,7 @@ is_claude() {
 declare -A win_dir          # window -> directory (from first pane)
 declare -A win_id           # window -> tmux window id
 declare -A win_name         # window -> tmux window name
+declare -A win_cmds         # window -> space-separated pane commands
 declare -A win_has_claude   # window -> 1 if any pane runs claude
 declare -A win_has_shell    # window -> 1 if any pane is a shell
 declare -a win_order        # ordered list of session:window keys
@@ -59,6 +60,9 @@ for line in "${panes[@]}"; do
     win_id["$win"]="$win_id_field"
     win_name["$win"]="$win_name_field"
   fi
+
+  # Accumulate pane commands to detect tmux auto-named windows
+  win_cmds["$win"]="${win_cmds[$win]:-} $cmd"
 
   if is_claude "$cmd"; then
     win_has_claude["$win"]=1
@@ -97,13 +101,21 @@ gen_name() {
   truncate_name "$name"
 }
 
-# Prefer the live tmux window name; fall back to directory-derived name
+# True when the window name is just tmux's auto-name (a pane's command)
+is_auto_name() {
+  local wn="$1" win="$2" c
+  for c in ${win_cmds[$win]:-}; do
+    [[ "$wn" == "$c" ]] && return 0
+  done
+  return 1
+}
+
+# Prefer an explicit tmux window name; fall back to directory-derived name
 label_for() {
   local win="$1" dir="$2" wn="${win_name[$win]:-}"
-  # Strip shell metacharacters; the label is interpolated into the restore script.
-  wn="${wn//[^A-Za-z0-9._-]/}"
-  if [[ -n "$wn" && ! "$wn" =~ ^[0-9]+$ && "$wn" != "$(basename "$dir")" && "$wn" != "zsh" && "$wn" != "bash" ]]; then
-    truncate_name "$wn"
+  if [[ -n "$wn" && ! "$wn" =~ ^[0-9]+$ && "$wn" != "$(basename "$dir")" ]] && ! is_auto_name "$wn" "$win"; then
+    # Strip shell metacharacters; the label is interpolated into the restore script.
+    truncate_name "${wn//[^A-Za-z0-9._-]/}"
   else
     gen_name "$dir"
   fi
