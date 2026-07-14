@@ -3,7 +3,7 @@
 	email = 8374368+adamsteen@users.noreply.github.com
 [core]
 	autocrlf = input
-	excludesfile = ~/.config/git/ignore
+	excludesFile = /Users/adams/.config/git/ignore
 	pager = delta
 [init]
 	defaultBranch = main
@@ -16,8 +16,15 @@
 [delta]
 	navigate = true
 [merge]
-	conflictStyle = zdiff3
+	conflictStyle = diff3
 [credential]
 	helper = cache --timeout=3600
+	helper = 
+	helper = /usr/local/share/gcm-core/git-credential-manager
 [include]
 	path = ~/.gitconfig.rmt
+[credential "https://dev.azure.com"]
+	useHttpPath = true
+[merge "mergiraf"]
+	name = mergiraf
+	driver = mergiraf merge --git %O %A %B -s %S -x %X -y %Y -p %P -l %L

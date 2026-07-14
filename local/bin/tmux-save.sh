@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tmux-save.sh — Snapshot current tmux layout and generate a restore script
-# that recreates all sessions/windows with claude --continue where applicable.
+# that recreates all sessions/windows, resuming claude by session UUID.
 set -euo pipefail
 
 RESTORE_DIR="$HOME/.config/tmux-restore"
@@ -13,8 +13,8 @@ if ! tmux info &>/dev/null; then
   exit 1
 fi
 
-# Collect pane data
-mapfile -t panes < <(tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_current_command} #{pane_current_path}')
+# Collect pane data (tab-delimited so paths/names with spaces survive)
+mapfile -t panes < <(tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}	#{pane_current_command}	#{pane_current_path}	#{window_id}	#{window_name}')
 
 if [[ ${#panes[@]} -eq 0 ]]; then
   echo "Error: no tmux panes found." >&2
@@ -29,6 +29,9 @@ is_claude() {
 # Parse panes into per-window data
 # Keys use session:window as identifier
 declare -A win_dir          # window -> directory (from first pane)
+declare -A win_id           # window -> tmux window id
+declare -A win_name         # window -> tmux window name
+declare -A win_cmds         # window -> space-separated pane commands
 declare -A win_has_claude   # window -> 1 if any pane runs claude
 declare -A win_has_shell    # window -> 1 if any pane is a shell
 declare -a win_order        # ordered list of session:window keys
@@ -36,7 +39,7 @@ declare -A seen_sessions    # track session order
 declare -a session_order    # ordered list of session names
 
 for line in "${panes[@]}"; do
-  read -r pane_id cmd path <<< "$line"
+  IFS=$'\t' read -r pane_id cmd path win_id_field win_name_field <<< "$line"
   win="${pane_id%.*}"       # session:window
   session="${win%%:*}"      # session name
 
@@ -51,10 +54,15 @@ for line in "${panes[@]}"; do
     win_order+=("$win")
   fi
 
-  # First pane sets the directory for the window
+  # First pane sets directory, window id and name for the window
   if [[ -z "${win_dir[$win]+x}" ]]; then
     win_dir["$win"]="$path"
+    win_id["$win"]="$win_id_field"
+    win_name["$win"]="$win_name_field"
   fi
+
+  # Accumulate pane commands to detect tmux auto-named windows
+  win_cmds["$win"]="${win_cmds[$win]:-} $cmd"
 
   if is_claude "$cmd"; then
     win_has_claude["$win"]=1
@@ -63,33 +71,24 @@ for line in "${panes[@]}"; do
   fi
 done
 
-# Global duplicate directory check (across all sessions, claude windows only)
-declare -A dir_to_wins
-has_dupes=0
-for win in "${win_order[@]}"; do
-  [[ "${win_has_claude[$win]:-0}" == "1" ]] || continue
-  dir="${win_dir[$win]}"
-  if [[ -n "${dir_to_wins[$dir]+x}" ]]; then
-    dir_to_wins["$dir"]="${dir_to_wins[$dir]}, $win"
-  else
-    dir_to_wins["$dir"]="$win"
-  fi
-done
-
-for dir in "${!dir_to_wins[@]}"; do
-  wins="${dir_to_wins[$dir]}"
-  if [[ "$wins" == *","* ]]; then
-    echo "Error: duplicate directory detected!" >&2
-    echo "  Directory: $dir" >&2
-    echo "  Windows:   $wins" >&2
-    has_dupes=1
-  fi
-done
-if [[ $has_dupes -eq 1 ]]; then
-  echo "" >&2
-  echo "Fix: move one of the duplicate claude sessions to a unique directory." >&2
-  exit 1
+# Load window-id -> session-id map produced by the claude tmux-sync hook
+declare -A wid_to_sid
+map_file="$HOME/.config/tmux-restore/session-map"
+if [[ -f "$map_file" ]]; then
+  while IFS=$'\t' read -r wid sid; do
+    [[ -n "$wid" ]] && wid_to_sid["$wid"]="$sid"
+  done < "$map_file"
 fi
+
+# Truncate to MAX_NAME_LEN, appending "..." when the name is longer
+truncate_name() {
+  local name="$1"
+  if [[ ${#name} -gt $MAX_NAME_LEN ]]; then
+    echo "${name:0:$((MAX_NAME_LEN - 3))}..."
+  else
+    echo "$name"
+  fi
+}
 
 # Generate window name from directory path
 gen_name() {
@@ -99,7 +98,27 @@ gen_name() {
   if [[ "$name" == "worktrees" || "$name" == ".worktrees" ]]; then
     name=$(basename "$(dirname "$dir")")-wt
   fi
-  echo "${name:0:$MAX_NAME_LEN}"
+  truncate_name "$name"
+}
+
+# True when the window name is just tmux's auto-name (a pane's command)
+is_auto_name() {
+  local wn="$1" win="$2" c
+  for c in ${win_cmds[$win]:-}; do
+    [[ "$wn" == "$c" ]] && return 0
+  done
+  return 1
+}
+
+# Prefer an explicit tmux window name; fall back to directory-derived name
+label_for() {
+  local win="$1" dir="$2" wn="${win_name[$win]:-}"
+  if [[ -n "$wn" && ! "$wn" =~ ^[0-9]+$ && "$wn" != "$(basename "$dir")" ]] && ! is_auto_name "$wn" "$win"; then
+    # Strip shell metacharacters; the label is interpolated into the restore script.
+    truncate_name "${wn//[^A-Za-z0-9._-]/}"
+  else
+    gen_name "$dir"
+  fi
 }
 
 # Build per-session window lists
@@ -122,7 +141,7 @@ restore_file="$RESTORE_DIR/tmux-restore-$timestamp.sh"
   cat <<'HEADER'
 #!/usr/bin/env bash
 # Auto-generated tmux restore script
-# Re-creates tmux sessions with claude --continue where applicable
+# Re-creates tmux sessions, resuming claude by session UUID where mapped
 set -euo pipefail
 
 HEADER
@@ -138,19 +157,23 @@ HEADER
 
     for win in "${wins[@]}"; do
       dir="${win_dir[$win]}"
-      name=$(gen_name "$dir")
+      name=$(label_for "$win" "$dir")
       has_claude="${win_has_claude[$win]:-0}"
       has_shell="${win_has_shell[$win]:-0}"
+      sid="${wid_to_sid[${win_id[$win]}]:-}"
 
       if [[ $first -eq 1 ]]; then
         echo "# Window $win_num: $name"
-        echo "tmux new-session -d -s \"$session\" -n \"$name\" -c \"\$HOME\""
+        echo "tmux new-session -d -s \"$session\" -n \"$name\" -c \"$dir\""
         # Renumber to start at 1
         echo "tmux move-window -s \"$session:0\" -t \"$session:1\" 2>/dev/null || true"
-        echo "tmux send-keys -t \"$session:1\" \"cd '$dir'\" Enter"
 
         if [[ "$has_claude" == "1" ]]; then
-          echo "tmux send-keys -t \"$session:1\" \"claude --continue\" Enter"
+          if [[ -n "$sid" ]]; then
+            echo "tmux send-keys -t \"$session:1\" \"claude --resume $sid\" Enter"
+          else
+            echo "tmux send-keys -t \"$session:1\" \"claude --continue\" Enter"
+          fi
         fi
         if [[ "$has_shell" == "1" ]]; then
           echo "tmux split-window -h -t \"$session:1\" -c \"$dir\""
@@ -163,7 +186,11 @@ HEADER
         echo "tmux new-window -t \"$session:$win_num\" -n \"$name\" -c \"$dir\""
 
         if [[ "$has_claude" == "1" ]]; then
-          echo "tmux send-keys -t \"$session:$win_num\" \"claude --continue\" Enter"
+          if [[ -n "$sid" ]]; then
+            echo "tmux send-keys -t \"$session:$win_num\" \"cd '$dir' && claude --resume $sid\" Enter"
+          else
+            echo "tmux send-keys -t \"$session:$win_num\" \"cd '$dir' && claude --continue\" Enter"
+          fi
         fi
         if [[ "$has_shell" == "1" ]]; then
           echo "tmux split-window -h -t \"$session:$win_num\" -c \"$dir\""
@@ -200,7 +227,7 @@ for session in "${session_order[@]}"; do
   win_num=1
   for win in "${wins[@]}"; do
     dir="${win_dir[$win]}"
-    name=$(gen_name "$dir")
+    name=$(label_for "$win" "$dir")
     indicators=""
     [[ "${win_has_claude[$win]:-0}" == "1" ]] && indicators+=" [claude]"
     [[ "${win_has_shell[$win]:-0}" == "1" ]] && indicators+=" [split]"
