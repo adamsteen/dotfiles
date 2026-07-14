@@ -1,2 +1,8 @@
 **/CLAUDE.local.md
 **/.claude/settings.local.json
+
+# Claude per-worktree scratch
+.claude/tmp/
+
+# Claude per-worktree scratch (repo-root variant)
+.claude-tmp/
