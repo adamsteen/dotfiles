@@ -76,6 +76,16 @@ if [[ -f "$map_file" ]]; then
   done < "$map_file"
 fi
 
+# Truncate to MAX_NAME_LEN, appending "..." when the name is longer
+truncate_name() {
+  local name="$1"
+  if [[ ${#name} -gt $MAX_NAME_LEN ]]; then
+    echo "${name:0:$((MAX_NAME_LEN - 3))}..."
+  else
+    echo "$name"
+  fi
+}
+
 # Generate window name from directory path
 gen_name() {
   local dir="$1"
@@ -84,7 +94,7 @@ gen_name() {
   if [[ "$name" == "worktrees" || "$name" == ".worktrees" ]]; then
     name=$(basename "$(dirname "$dir")")-wt
   fi
-  echo "${name:0:$MAX_NAME_LEN}"
+  truncate_name "$name"
 }
 
 # Prefer the live tmux window name; fall back to directory-derived name
@@ -93,7 +103,7 @@ label_for() {
   # Strip shell metacharacters; the label is interpolated into the restore script.
   wn="${wn//[^A-Za-z0-9._-]/}"
   if [[ -n "$wn" && ! "$wn" =~ ^[0-9]+$ && "$wn" != "$(basename "$dir")" && "$wn" != "zsh" && "$wn" != "bash" ]]; then
-    echo "${wn:0:$MAX_NAME_LEN}"
+    truncate_name "$wn"
   else
     gen_name "$dir"
   fi
