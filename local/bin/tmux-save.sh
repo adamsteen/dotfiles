@@ -164,18 +164,16 @@ HEADER
 
       if [[ $first -eq 1 ]]; then
         echo "# Window $win_num: $name"
-        echo "tmux new-session -d -s \"$session\" -n \"$name\" -c \"\$HOME\""
+        echo "tmux new-session -d -s \"$session\" -n \"$name\" -c \"$dir\""
         # Renumber to start at 1
         echo "tmux move-window -s \"$session:0\" -t \"$session:1\" 2>/dev/null || true"
 
         if [[ "$has_claude" == "1" ]]; then
           if [[ -n "$sid" ]]; then
-            echo "tmux send-keys -t \"$session:1\" \"cd '$dir' && claude --resume $sid\" Enter"
+            echo "tmux send-keys -t \"$session:1\" \"claude --resume $sid\" Enter"
           else
-            echo "tmux send-keys -t \"$session:1\" \"cd '$dir' && claude --continue\" Enter"
+            echo "tmux send-keys -t \"$session:1\" \"claude --continue\" Enter"
           fi
-        else
-          echo "tmux send-keys -t \"$session:1\" \"cd '$dir'\" Enter"
         fi
         if [[ "$has_shell" == "1" ]]; then
           echo "tmux split-window -h -t \"$session:1\" -c \"$dir\""
