@@ -13,8 +13,8 @@ if ! tmux info &>/dev/null; then
   exit 1
 fi
 
-# Collect pane data
-mapfile -t panes < <(tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_current_command} #{pane_current_path} #{window_id} #{window_name}')
+# Collect pane data (tab-delimited so paths/names with spaces survive)
+mapfile -t panes < <(tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}	#{pane_current_command}	#{pane_current_path}	#{window_id}	#{window_name}')
 
 if [[ ${#panes[@]} -eq 0 ]]; then
   echo "Error: no tmux panes found." >&2
@@ -38,7 +38,7 @@ declare -A seen_sessions    # track session order
 declare -a session_order    # ordered list of session names
 
 for line in "${panes[@]}"; do
-  read -r pane_id cmd path win_id_field win_name_field <<< "$line"
+  IFS=$'\t' read -r pane_id cmd path win_id_field win_name_field <<< "$line"
   win="${pane_id%.*}"       # session:window
   session="${win%%:*}"      # session name
 
@@ -90,6 +90,8 @@ gen_name() {
 # Prefer the live tmux window name; fall back to directory-derived name
 label_for() {
   local win="$1" dir="$2" wn="${win_name[$win]:-}"
+  # Strip shell metacharacters; the label is interpolated into the restore script.
+  wn="${wn//[^A-Za-z0-9._-]/}"
   if [[ -n "$wn" && ! "$wn" =~ ^[0-9]+$ && "$wn" != "$(basename "$dir")" && "$wn" != "zsh" && "$wn" != "bash" ]]; then
     echo "${wn:0:$MAX_NAME_LEN}"
   else
