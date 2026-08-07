@@ -30,6 +30,12 @@ cd ~/dotfiles
 - `~/.secrets` — sourced by `.zprofile` if present. Use for personal env vars / tokens.
 - `~/.zshrc.rmt`, `~/.zprofile.rmt`, `~/.gitconfig.rmt` — sourced if present. Use for a work-specific overlay installed alongside these dotfiles.
 
+The shared Git configuration invokes `gh` through `PATH` so the same file works
+with Homebrew on macOS and packaged or Linuxbrew installs on Linux. Install and
+authenticate `gh` on each host, but do not run `gh auth setup-git`: that command
+writes a host-specific absolute executable path into the symlinked, tracked
+`~/.gitconfig`. Put any non-portable credential helper in `~/.gitconfig.rmt`.
+
 ## Linux: sudo-less docker
 
 `local/bin/docker-proxy-start` runs `socat` (with `sudo`) to expose the
