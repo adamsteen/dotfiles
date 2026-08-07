@@ -20,15 +20,9 @@
 [credential]
 	helper = cache --timeout=3600
 [include]
+	path = ~/.gitconfig.private
+[include]
 	path = ~/.gitconfig.rmt
-[credential "https://github.com"]
-	helper =
-	helper = !gh auth git-credential
-[credential "https://gist.github.com"]
-	helper =
-	helper = !gh auth git-credential
-[credential "https://dev.azure.com"]
-	useHttpPath = true
 [merge "mergiraf"]
 	name = mergiraf
 	driver = mergiraf merge --git %O %A %B -s %S -x %X -y %Y -p %P -l %L

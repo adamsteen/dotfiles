@@ -28,13 +28,16 @@ cd ~/dotfiles
 ## Machine-local overrides
 
 - `~/.secrets` — sourced by `.zprofile` if present. Use for personal env vars / tokens.
-- `~/.zshrc.rmt`, `~/.zprofile.rmt`, `~/.gitconfig.rmt` — sourced if present. Use for a work-specific overlay installed alongside these dotfiles.
+- `~/.gitconfig.private` — optional personal-machine Git credentials and settings.
+- `~/.zshrc.rmt`, `~/.zprofile.rmt`, `~/.gitconfig.rmt` — optional work-only overlays installed alongside these dotfiles.
 
-The shared Git configuration invokes `gh` through `PATH` so the same file works
-with Homebrew on macOS and packaged or Linuxbrew installs on Linux. Install and
-authenticate `gh` on each host, but do not run `gh auth setup-git`: that command
-writes a host-specific absolute executable path into the symlinked, tracked
-`~/.gitconfig`. Put any non-portable credential helper in `~/.gitconfig.rmt`.
+The shared Git configuration contains no personal or work credential-provider
+selection. Put personal GitHub helpers in `~/.gitconfig.private` and work-only
+Azure, proxy, identity, or credential-manager settings in `~/.gitconfig.rmt`.
+Commands in either overlay should resolve through `PATH` so they work with
+Homebrew on macOS and packaged or Linuxbrew installs on Linux. Do not run
+`gh auth setup-git`: it writes a host-specific absolute executable path into the
+symlinked, tracked `~/.gitconfig` instead of the appropriate overlay.
 
 ## Linux: sudo-less docker
 
