@@ -47,9 +47,9 @@ root-owned `/var/run/docker.sock` as a world-writable user socket at
 `devcontainer` without `sudo`:
 
 ```sh
-brew install socat    # one-shot per machine (or: sudo apt install socat)
-docker-proxy-start    # one-shot per boot
-docker ps             # no sudo
+sudo apt install socat  # Linux only — macOS gets it via install.sh's Brewfile
+docker-proxy-start      # one-shot per boot
+docker ps               # no sudo
 ```
 
 The proxy is launched via `setsid -f` so it survives the launching shell
