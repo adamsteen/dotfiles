@@ -85,6 +85,24 @@ if [ ! -d "$HOME/.oh-my-zsh" ]; then
     fi
 fi
 
+# SDKMAN (cloned from upstream if not already present) — manages JDK installs.
+if [ ! -d "$HOME/.sdkman" ]; then
+    echo "  Installing SDKMAN..."
+    curl -s "https://get.sdkman.io" | bash
+fi
+
+# Homebrew packages (macOS host only — devcontainer has its own base image)
+if [ "$(uname -s)" = "Darwin" ] && [ ! -f /.dockerenv ] && command -v brew >/dev/null; then
+    echo "  Installing Homebrew packages..."
+    brew bundle --file="$DOTFILES_DIR/Brewfile"
+fi
+
+# Claude Code CLI (official installer, self-updating)
+if [ ! -f /.dockerenv ] && ! command -v claude >/dev/null; then
+    echo "  Installing Claude Code CLI..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
+
 # Scripts
 link_or_copy "$DOTFILES_DIR/local/bin/tmux-save.sh"        "$HOME/.local/bin/tmux-save.sh"
 link_or_copy "$DOTFILES_DIR/local/bin/status.sh"           "$HOME/.local/bin/status.sh"
@@ -97,6 +115,14 @@ if [ ! -f /.dockerenv ] && [ ! -f "$HOME/.secrets" ]; then
     echo "NOTE: ~/.secrets does not exist."
     echo "  Copy the template and fill in your values:"
     echo "  cp $DOTFILES_DIR/secrets.example ~/.secrets"
+fi
+
+# ── Manual installs ──────────────────────────────────────────────────────────
+# Apps with no brew cask, or not worth automating. Add to this list as needed.
+if [ ! -f /.dockerenv ]; then
+    echo ""
+    echo "NOTE: install these manually (no brew cask / not automated):"
+    echo "  - Toggl Track: https://toggl.com/track/download/"
 fi
 
 echo ""
