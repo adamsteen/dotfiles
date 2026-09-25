@@ -1,3 +1,6 @@
+# The following lines were added by Docker Desktop to add commands to your PATH.
+export PATH="$PATH:/Users/adams/.docker/bin"
+# End of Docker Desktop section.
 
 # ── Environment variables ────────────────────────────────────────────────────
 # VISUAL/EDITOR are set further down, after `brew shellenv` populates
@@ -63,9 +66,10 @@ export EDITOR=$VISUAL
 eval "$(fnm env --use-on-cd 2>/dev/null)"
 eval "$(rbenv init - --no-rehash zsh 2>/dev/null)"
 
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+# SDKMAN_DIR must be set here so sdkman-managed PATH entries exist for
+# non-interactive shells too. The actual sdkman-init.sh source (which
+# needs compdef from OMZ) moved to zshrc.
 export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
 # ── Container-only PATH hardening ────────────────────────────────────────────
 # In a network-restricted devcontainer, move all $HOME paths (and /opt/java,

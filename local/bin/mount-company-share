@@ -1,0 +1,7 @@
+#!/bin/bash
+# Mount/open the Company DFS share in Finder via macOS `open`.
+# `open smb://...` is idempotent: if already mounted it just reveals it,
+# so no pre-check is needed.
+set -euo pipefail
+
+open "smb://adams@dfs01/Company"

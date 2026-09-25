@@ -9,8 +9,8 @@ if [ -f /.dockerenv ]; then
     SAVEHIST=0
 else
     HISTFILE=~/.config/zsh/histfile
-    HISTSIZE=20000
-    SAVEHIST=20000
+    HISTSIZE=5000
+    SAVEHIST=5000
 fi
 
 # ── Vi mode ──────────────────────────────────────────────────────────────────
@@ -48,6 +48,7 @@ fi
 # clone in the devcontainer by default; set INSTALL_OMZ=1 to opt in there.
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="robbyrussell"
+zstyle ':omz:update' mode reminder
 # `macos` plugin (tab/pfd/quick-look) only works on Darwin; omit elsewhere.
 if [[ "$OSTYPE" == darwin* ]]; then
     plugins=(git macos docker docker-compose tmux vi-mode)
@@ -61,6 +62,11 @@ if [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
     autoload -Uz compinit
     compinit
 fi
+
+# ── SDKMAN ───────────────────────────────────────────────────────────────────
+# Sourced here (not zprofile) so compdef already exists from OMZ above —
+# sdkman-init.sh skips its own compinit call when compdef is defined.
+[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
 
 # ── iTerm2 ───────────────────────────────────────────────────────────────────
 # iTerm2 is macOS-only — guard explicitly so the intent is obvious to readers
