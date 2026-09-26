@@ -63,6 +63,9 @@ if [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
     compinit
 fi
 
+# op completion needs compdef, so load it after compinit.
+command -v op >/dev/null && eval "$(op completion zsh)"
+
 # ── SDKMAN ───────────────────────────────────────────────────────────────────
 # Sourced here (not zprofile) so compdef already exists from OMZ above —
 # sdkman-init.sh skips its own compinit call when compdef is defined.
