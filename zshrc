@@ -69,7 +69,12 @@ command -v op >/dev/null && eval "$(op completion zsh)"
 # ── SDKMAN ───────────────────────────────────────────────────────────────────
 # Sourced here (not zprofile) so compdef already exists from OMZ above —
 # sdkman-init.sh skips its own compinit call when compdef is defined.
-[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
+    SDKMAN_OFFLINE_MODE=true source "$SDKMAN_DIR/bin/sdkman-init.sh"
+    # Skip the sdkman network health check when cd runs sdk env.
+    functions -c sdkman_auto_env _sdkman_auto_env 2>/dev/null &&
+        sdkman_auto_env() { SDKMAN_OFFLINE_MODE=true _sdkman_auto_env }
+fi
 
 # ── iTerm2 ───────────────────────────────────────────────────────────────────
 # iTerm2 is macOS-only — guard explicitly so the intent is obvious to readers
