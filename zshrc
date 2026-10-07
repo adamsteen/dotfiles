@@ -1,3 +1,4 @@
+zmodload zsh/zprof
 
 # ── History ──────────────────────────────────────────────────────────────────
 # Inside the devcontainer we don't persist shell history. This reduces the
@@ -85,3 +86,6 @@ fi
 
 # ── Overlay ──────────────────────────────────────────────────────────────────
 [ -f "$HOME/.zshrc.rmt" ] && source "$HOME/.zshrc.rmt"
+
+# ── Startup profile ──────────────────────────────────────────────────────────
+{ print "== $(date '+%F %T') pane=${TMUX_PANE:-none}"; zprof | head -15; } >> ~/.cache/zprof.log
