@@ -42,6 +42,7 @@ fi
 # ── Completions ──────────────────────────────────────────────────────────────
 # fpath additions must run before any compinit (ours below or OMZ's), or the
 # extra completion functions won't be picked up.
+typeset -U fpath  # drop duplicate fpath entries
 [ -d "$HOME/.docker/completions" ] && fpath=("$HOME/.docker/completions" $fpath)
 
 # ── Oh My Zsh ────────────────────────────────────────────────────────────────
